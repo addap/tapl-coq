@@ -1,6 +1,7 @@
 Require Import Arith Lia List.
 Import ListNotations.
 
+(* From TAPL exercise 21.2.2 to proof that vF <<= Trees *)
 Inductive Alphabet := Times | Top.
 Inductive N := One | Two.
 
@@ -198,9 +199,10 @@ Qed.
 
 (* original cut rule with arbitraty sigma. *)
 Lemma original_cut (t: tree):
-  anyTree t -> forall pi sigma, (is_def t (pi ++ sigma)) -> is_def t pi.
+  (forall pi n, (is_def t (pi ++ [n]) -> is_def t pi))
+  -> forall pi sigma, (is_def t (pi ++ sigma)) -> is_def t pi.
 Proof.
-  intros Hany pi sigma. revert sigma pi.
+  intros Hcut pi sigma. revert sigma pi.
   refine (size_ind (fun pi => length pi) (fun sigma => forall pi, is_def t (pi ++ sigma) -> is_def t pi) _).
   intros [|n sigma] IH pi H.
   - rewrite app_nil_r in H. assumption.
@@ -211,5 +213,5 @@ Proof.
       cbn in Hlen. rewrite last_length in Hlen.
       apply Nat.succ_inj, Hlen. } 
     cbn. lia.
-    eapply cut. rewrite <- app_assoc. apply H.
+    eapply Hcut. rewrite <- app_assoc. apply H.
 Qed.
