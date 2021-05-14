@@ -93,6 +93,33 @@ Theorem frob_eq {A} : forall (s:stream A), s = frob s.
   destruct s. reflexivity.
 Qed.
 
+Module subj.
+  (* https://www.joachim-breitner.de/blog/726-Coinduction_in_Coq_and_Isabelle *)
+  CoInductive natw :=
+  | N : natw
+  | SS : natw -> natw.
+
+  CoFixpoint infS := SS infS.
+  Definition infS' := cofix F := SS F.
+
+  Definition frob (n: natw) :=
+    match n with
+    | N => N
+    | SS x => SS x
+    end.
+
+  Lemma frob_eq : forall n, frob n = n.
+  Proof.
+    unfold frob. intros []; reflexivity.
+  Qed.
+
+  Compute infS.
+  Compute frob infS.
+  Eval simpl in frob_eq infS.
+  Fail Check eq_refl : frob infS = infS.
+End subj.
+                              
+
 Goal ones = ones''.
 Proof.
   rewrite (frob_eq ones). unfold frob. simpl.
