@@ -180,8 +180,56 @@ Lemma context_renaming_lemma :
             List.nth_error Gamma' (zeta x) = Some (ren_ty xi T)) ->
   has_type Gamma s T -> has_type Gamma' (ren_tm xi zeta s) (ren_ty xi T).
 Proof.
-Admitted.
-
+  intros * H Htype.
+  induction Htype in Gamma', H, xi, zeta |- *.
+  - constructor. apply H, H0.
+  - cbn. constructor.
+    apply IHHtype.
+    intros [|x] T Hx.
+    + cbn. injection Hx. intros ->. reflexivity.
+    + cbn. apply H. apply Hx.
+  - cbn. econstructor.
+    + apply IHHtype1.
+      intros x T Hx.
+      apply H, Hx.
+    + fold ren_ty.
+      apply IHHtype2.
+      intros x T Hx.
+      apply H, Hx.
+  - cbn. constructor.
+    apply IHHtype.
+    intros x Tx Hx.
+    unfold upRen_ty_tm.
+    unfold upRen_ty_ty. unfold up_ren.
+    specialize (nth_error_map _ _ _ _ Hx) as (Tx' & HTx0 & HTx1).
+    specialize (H _ _ HTx0).
+    specialize (List.map_nth_error (ren_ty S) _ _ H).
+    (* now autoubst should be enough to form Hren into the goal *)
+    rewrite renRen_ty. intros Hren.
+    subst Tx.
+    rewrite renRen_ty.
+    rewrite (extRen_ty _ (funcomp S xi)).
+    exact Hren.
+    intros [|n].
+    + cbn. reflexivity.
+    + cbn. reflexivity.
+  - cbn.
+    (* this should be the substitution lemma we want to prove *)
+    assert (ren_ty xi (subst_ty (scons T2 var_ty) T1) = subst_ty (scons (ren_ty xi T2) var_ty) (ren_ty (upRen_ty_ty xi) T1)) as ->.
+    {
+      rewrite compRen_ty.
+      rewrite renComp_ty.
+      apply ext_ty.
+      intros [|x].
+      - cbn. reflexivity.
+      - cbn. reflexivity.
+    }
+    constructor.
+    apply IHHtype.
+    intros x T Hx.
+    apply H, Hx.
+Qed.
+    
 Lemma context_morphism_lemma :
   forall Gamma Gamma' s T sigma tau,
   (forall x T, List.nth_error Gamma x = Some T -> has_type Gamma' (tau x) (subst_ty sigma T)) ->
