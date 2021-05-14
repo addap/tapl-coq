@@ -175,17 +175,16 @@ Qed.
 (*** Preservation ***)
 
 Lemma context_renaming_lemma :
-  forall Gamma s T xi zeta Gamma',
-    (forall x Tx Tx', List.nth_error Gamma' x = Some Tx ->
-                 List.nth_error Gamma (zeta x) = Some Tx' ->
-                 Tx' = (ren_ty xi Tx)) ->
-  has_type Gamma' s T -> has_type Gamma (ren_tm xi zeta s) (ren_ty xi T).
+  forall Gamma Gamma' s T xi zeta ,
+    (forall x T, List.nth_error Gamma x = Some T ->
+            List.nth_error Gamma' (zeta x) = Some (ren_ty xi T)) ->
+  has_type Gamma s T -> has_type Gamma' (ren_tm xi zeta s) (ren_ty xi T).
 Proof.
 Admitted.
 
 Lemma context_morphism_lemma :
-  forall Gamma s T sigma tau Gamma',
-  (forall x, List.nth_error Gamma x = Some T -> has_type Gamma' (tau x) (subst_ty sigma T)) ->
+  forall Gamma Gamma' s T sigma tau,
+  (forall x T, List.nth_error Gamma x = Some T -> has_type Gamma' (tau x) (subst_ty sigma T)) ->
   has_type Gamma s T -> has_type Gamma' (subst_tm sigma tau s) (subst_ty sigma T).
 Proof.
 Admitted.
@@ -203,9 +202,10 @@ Proof.
     rewrite <- idSubst_ty with (sigma_ty := var_ty).
     2: intros x; trivial.
     apply context_morphism_lemma with (Gamma:=T1 :: Gamma).
-    rewrite idSubst_ty. 2: intros x; trivial.
     2: exact H1.
-    intros [|x].
+    intros x Tx.
+    rewrite idSubst_ty. 2: intros n; trivial.
+    destruct x as [|x].
     + cbn. intros [=].
       subst.  exact H4.
     + cbn. intros Hnth.
@@ -214,7 +214,7 @@ Proof.
   - inversion H2; subst.
     apply context_morphism_lemma with (Gamma:=List.map (ren_ty S) Gamma).
     2: exact H1.
-    intros x H.
+    intros x Tx H.
     (* I think I proved this goal before somewhere.
      Intuitively holds because of H, T1 does not contain a 0, so the substitution does not do anything *)
     specialize (@nth_error_map ty _ _ _ _ _ H) as (T1' & HT1 & HT1').
