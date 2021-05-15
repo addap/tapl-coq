@@ -235,7 +235,72 @@ Lemma context_morphism_lemma :
   (forall x T, List.nth_error Gamma x = Some T -> has_type Gamma' (tau x) (subst_ty sigma T)) ->
   has_type Gamma s T -> has_type Gamma' (subst_tm sigma tau s) (subst_ty sigma T).
 Proof.
-Admitted.
+  intros * H Htype.
+  induction Htype in Gamma', sigma, tau, H |- *.
+  - cbn. apply H, H0.
+  - cbn. constructor.
+    rewrite (ext_tm _ _ sigma (up_tm_tm tau)).
+    2: apply up_tm_ty_sigma.
+    2: intros x; reflexivity.
+    apply IHHtype.
+    unfold up_tm_tm.
+    intros [|x] T Hx.
+    + cbn. constructor. cbn.
+      injection Hx. intros ->. reflexivity.
+    + cbn. rewrite <- ren_id.
+      eapply context_renaming_lemma.
+      2: apply H, Hx.
+      intros [|n] Tn Hn.
+      * cbn. destruct Gamma'. discriminate Hn. cbn in Hn.
+        injection Hn. intros ->. rewrite ren_id. reflexivity.
+      * cbn. destruct Gamma'. discriminate Hn. cbn in Hn.
+        rewrite Hn. rewrite ren_id. reflexivity.
+  - cbn. econstructor.
+    + apply IHHtype1.
+      intros x T Hx. apply H, Hx.
+    + apply IHHtype2.
+      intros x T Hx. apply H, Hx.
+  - cbn. constructor.
+    apply IHHtype.
+    intros x Tx Hx.
+    specialize (nth_error_map _ _ _ _ Hx) as (Tx' & HTx0 & HTx1).
+    specialize (H _ _ HTx0).
+    unfold up_ty_tm, up_ty_ty, funcomp.
+    rewrite HTx1.
+    rewrite renComp_ty. unfold funcomp. cbn.
+    change (fun x0 => ren_ty shift (sigma x0)) with (funcomp (ren_ty shift) sigma).
+    rewrite <- compRen_ty.
+    eapply context_renaming_lemma.
+    2: exact H.
+    intros [|n] Tn Hn.
+    + cbn. destruct Gamma'. discriminate Hn.
+      cbn. cbn in Hn. injection Hn as ->. reflexivity.
+    + cbn. destruct Gamma'. discriminate Hn.
+      cbn. cbn in Hn.
+      apply List.map_nth_error. apply Hn.
+  - cbn.
+    assert (subst_ty sigma (subst_ty (scons T2 var_ty) T1) = subst_ty (scons (subst_ty sigma T2) var_ty) (subst_ty (up_ty_ty sigma) T1)) as ->.
+    {
+      rewrite compComp_ty.
+      rewrite compComp_ty.
+      apply ext_ty.
+      intros [|x].
+      - cbn. reflexivity.
+      - cbn. (* should be true. when we shift (sigma x) the next substitution will just decrement all indices again *)
+        unfold funcomp.
+        rewrite renComp_ty.
+        rewrite (ext_ty _ var_ty).
+        rewrite idSubst_ty. reflexivity.
+        intros n; reflexivity.
+        intros [|n].
+        cbn. reflexivity.
+        cbn. reflexivity.
+    }
+    constructor.
+    apply IHHtype.
+    intros x T Hx.
+    apply H, Hx.
+Qed.
 
 Lemma sysf_preservation :
   forall Gamma s s' T, has_type Gamma s T -> eval s s' -> has_type Gamma s' T.
